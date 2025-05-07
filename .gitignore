@@ -1,0 +1,5 @@
+.env
+*-response.json
+data.json
+*.log
+test.*
