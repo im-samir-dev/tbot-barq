@@ -65,7 +65,11 @@ function barq_e_man_get_planned() {
 
 function create_webhook() {
   rm serveo.log
-  ssh -R 80:localhost:${env[PORT]} serveo.net > serveo.log
+  while true; do
+    echo "Connect to Serveo"
+    ssh -R 80:localhost:${env[PORT]} serveo.net > serveo.log
+    echo "Serveo connection faild"
+  done
 }
 
 function make_webhook_persist() {
@@ -79,6 +83,8 @@ function make_webhook_persist() {
 
       create_webhook &
       create_webhook_pid=$!
+
+      echo "Webhook address: $(get_webhook_address)"
 
       set_webhook
     fi
@@ -102,7 +108,7 @@ function get_webhook_address() {
 
 function webhook() {
   while true; do
-    local input=$(cat response.json | netcat -lN ${env[PORT]} | awk -f response.awk)
+    local input=$(cat response.json | netcat -lp ${env[PORT]} | awk -f response.awk)
     local sender_id=$(echo $input | jq '.message.from.id')
     local message_text=$(echo $input | jq '.message.text' | sed 's/"//g')
     # echo -e "\t\tuser = $sender_id"
@@ -291,10 +297,17 @@ else
   make_webhook_persist &
   make_webhook_persist_pid=$!
 
+  # create_webhook &
+  # create_webhook_pid=$!
+
+  # echo "Webhook address: $(get_webhook_address)"
+  # set_webhook
+
   webhook &
   webhook_pid=$!
 
   while true; do
+    echo "Check bills"
     check_all_bills
     sleep 1800
   done
@@ -302,9 +315,9 @@ else
   wait $webhook_pid
   kill $webhook_pid
 
-  wait $make_webhook_persist_pid
-  kill $make_webhook_persist_pid
+  #wait $make_webhook_persist_pid
+  #kill $make_webhook_persist_pid
 
-  wait $create_webhook_pid
+  #wait $create_webhook_pid
   kill $create_webhook_pid
 fi
