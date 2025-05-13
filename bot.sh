@@ -31,20 +31,35 @@ function check_all_bills() {
   done
 }
 
+function barq_e_man_get_current() {
+  local today=$(python -c "import jdatetime; date=jdatetime.date.today(); print(date.strftime('%Y/%m/%d'))")
+
+  local response=$(curl 'https://uiapi2.saapa.ir/api/ebills/BlackoutsReport' --compressed -X POST -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0' -H 'Accept: application/json, text/plain, */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate, br, zstd' -H 'Content-Type: application/json; charset=utf-8' -H 'Referer: https://bargheman.com/' -H 'Origin: https://bargheman.com' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: cross-site' -H 'Authorization: Bearer '${env[BARQ_TOKEN]} -H 'Connection: keep-alive' --data-raw '{"bill_id":"'$1'","date":"'$today'"}' 2>/dev/zero)
+
+  local data=$(echo $response | jq ".data")
+  # local data=$(cat jaari-response.json | jq ".[2].data")
+
+  local data_length=$(echo $data | jq 'length')
+
+  if [ "$data_length" -le 1 ]; then
+    echo true
+  fi
+}
+
 function barq_e_man_get_planned() {
   local today=$(python -c "import jdatetime; date=jdatetime.date.today(); print(date.strftime('%Y/%m/%d'))")
   local next_few_days=$(python -c "import jdatetime; date=jdatetime.date.today()+jdatetime.timedelta(days=7); print(date.strftime('%Y/%m/%d'))")
 
   local response=$(curl 'https://uiapi2.saapa.ir/api/ebills/PlannedBlackoutsReport' --compressed -X POST -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0' -H 'Accept: application/json, text/plain, */*' -H 'Accept-Language: en-US,en;q=0.5' -H 'Content-Type: application/json; charset=utf-8' -H 'Referer: https://bargheman.com/' -H 'Origin: https://bargheman.com' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: cross-site' -H 'Authorization: Bearer '${env[BARQ_TOKEN]} -H 'Connection: keep-alive' --data-raw '{"bill_id":"'$1'","from_date":"'$today'","to_date":"'next_few_days'"}' 2>/dev/zero)
 
-  # echo $response | jq "." > last-barq-response.json
-
   local data=$(echo $response | jq ".data")
-  # local data=$(cat response-planned.json | jq ".[2].data")
+  # local data=$(cat planned-response.json | jq ".[2].data")
 
   local data_length=$(echo $data | jq 'length')
 
-  if [ "$data_length" -gt 0 ]; then
+  local current=$(barq_e_man_get_current $1)
+
+  if [ "$data_length" -gt 0 ] && [ ! -z $current ]; then
     for i in $(seq 0 1 $((data_length-1))); do
       local date=$(echo $data | jq '.['$i'].outage_date' | sed 's/"//g')
       local start_time=$(echo $data | jq '.['$i'].outage_start_time' | sed 's/"//g')
@@ -240,7 +255,6 @@ function update_data_remove_user_from_bill() {
 
 function update_data_set_last_sent_for_bill() {
   if [[ -n $1 && -n $2 && -n $3 && -n $4 ]]; then
-    # local data=$(cat data.json | jq '(."'$1'"|values[].last_sent)|={"date":"'$2'","time":"'$3'"}')
     local data=$(cat data.json | jq '(."'$1'"|values[]|select(.id=='$2').last_sent)|={"date":"'$3'","time":"'$4'"}')
 
     echo $data > data.json
@@ -254,7 +268,6 @@ function check_last_sent() {
     echo $data
   fi
 }
-
 
 if [ "$1" = "install" ]; then
   sudo systemctl stop bot.service
@@ -316,8 +329,8 @@ else
   kill $webhook_pid
 
   #wait $make_webhook_persist_pid
-  #kill $make_webhook_persist_pid
+  kill $make_webhook_persist_pid
 
   #wait $create_webhook_pid
-  kill $create_webhook_pid
+  # kill $create_webhook_pid
 fi
