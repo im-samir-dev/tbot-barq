@@ -100,8 +100,7 @@ function make_webhook_persist() {
       create_webhook_pid=$!
 
       echo "Webhook address: $(get_webhook_address)"
-
-      set_webhook
+      set_webhook $(get_webhook_address)
     fi
 
     sleep .1
@@ -172,7 +171,7 @@ function get_me() {
 
 function set_webhook() {
   local api_set_webhook="$base_url/setWebhook"
-  local webhook_url=$(get_webhook_address)
+  # local webhook_url=$(get_webhook_address)
 
   proxychains curl $api_set_webhook \
     -X POST \
@@ -180,7 +179,7 @@ function set_webhook() {
     -H 'Accept-Language: en-US,en;q=0.5' \
     -H 'Accept-Encoding: gzip, deflate, br, zstd' \
     -H 'Content-Type: application/json; charset=utf-8' \
-    -d '{"url":"'$webhook_url'"}' \
+    -d '{"url":"'$1'"}' \
     2>/dev/zero 1>&2
     # -d '{"url":"'${env[BOT_WEBHOOK_URL]}'"}' \
 
@@ -307,8 +306,14 @@ else
 
   set_variables
 
-  make_webhook_persist &
-  make_webhook_persist_pid=$!
+  if [ -z ${env[BOT_WEBHOOK_URL]} ]; then
+    make_webhook_persist &
+    make_webhook_persist_pid=$!
+  else
+    echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
+    set_webhook ${env[BOT_WEBHOOK_URL]}
+  fi
+
 
   # create_webhook &
   # create_webhook_pid=$!
