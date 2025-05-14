@@ -81,7 +81,7 @@ Users can interact with the bot using these commands:
 
 - Webhook functionality uses an SSH tunnel via `serveo.net`, which may reconnect intermittently.
 - All HTTP requests are routed through `proxychains`, so ensure your proxy configuration is working correctly.
-- The `.env` file is used to configure bot tokens and webhook settings. If `BOT_WEBHOOK_URL` is set, the bot will use this address as the webhook endpoint. If it's not set, the bot will automatically create a temporary webhook using `serveo.net`. The second option (Use `serveo.net`) is best choice for run bot locally in your PC, RaspberryPi, Termux (on android devices) or ...
+- The `.env` file is used to configure bot tokens and webhook settings. If `BOT_WEBHOOK_URL` is set, the bot will use this address as the webhook endpoint. If it's not set, the bot will automatically create a temporary webhook using `serveo.net`. The second option (Use `serveo.net`) is good for run bot locally in your PC, RaspberryPi, Termux (on android devices) or ...
 
 ## License
 
