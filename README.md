@@ -21,6 +21,7 @@ A Bash-based Telegram bot that tracks and notifies users about planned and curre
 - `netcat`
 - `curl`
 - `proxychains`
+- `tor` (or other socks4/socks5 proxies)
 - `ssh`
 - `python3`
 - Python package: `jdatetime`
