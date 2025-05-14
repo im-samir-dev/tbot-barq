@@ -18,6 +18,7 @@ A Bash-based Telegram bot that tracks and notifies users about planned and curre
 
 - `bash` (v4+)
 - `jq`
+- `netcat`
 - `curl`
 - `proxychains`
 - `ssh`
