@@ -41,7 +41,7 @@ function barq_e_man_get_current() {
 
   local data_length=$(echo $data | jq 'length')
 
-  if [ "$data_length" -le 1 ]; then
+  if [[ "$data_length" -le 1 ]]; then
     echo true
   fi
 }
