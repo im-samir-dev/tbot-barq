@@ -361,8 +361,8 @@ else
     make_webhook_persist &
     make_webhook_persist_pid=$!
   else
-    echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
     set_webhook ${env[BOT_WEBHOOK_URL]}
+    echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
   fi
 
 
