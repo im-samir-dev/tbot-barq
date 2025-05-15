@@ -161,27 +161,46 @@ function webhook() {
 function get_me() {
   local api_get_me="$base_url/getMe"
 
-  proxychains curl $api_get_me \
-    -H 'Accept: application/json, text/plain, */*' \
-    -H 'Accept-Language: en-US,en;q=0.5' \
-    -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-    -H 'Content-Type: application/json; charset=utf-8' \
-    2>/dev/zero
+  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+    proxychains curl $api_get_me \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      2>/dev/zero
+  else
+    curl $api_get_me \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      2>/dev/zero
+  fi
 }
 
 function set_webhook() {
   local api_set_webhook="$base_url/setWebhook"
   # local webhook_url=$(get_webhook_address)
 
-  proxychains curl $api_set_webhook \
-    -X POST \
-    -H 'Accept: application/json, text/plain, */*' \
-    -H 'Accept-Language: en-US,en;q=0.5' \
-    -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-    -H 'Content-Type: application/json; charset=utf-8' \
-    -d '{"url":"'$1'"}' \
-    2>/dev/zero 1>&2
-    # -d '{"url":"'${env[BOT_WEBHOOK_URL]}'"}' \
+  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+    proxychains curl $api_set_webhook \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{"url":"'$1'"}' \
+      2>/dev/zero 1>&2
+  else
+    curl $api_set_webhook \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{"url":"'$1'"}' \
+      2>/dev/zero 1>&2
+  fi
 
   send_message_to_user 111156044 "Wehhook set to $webhook_url"
 }
@@ -189,33 +208,61 @@ function set_webhook() {
 function send_message_to_user() {
   local api_send_message="$base_url/sendMessage"
 
-  proxychains curl $api_send_message \
-    -X POST \
-    -H 'Accept: application/json, text/plain, */*' \
-    -H 'Accept-Language: en-US,en;q=0.5' \
-    -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-    -H 'Content-Type: application/json; charset=utf-8' \
-    -d '{
-        "chat_id":"'$1'",
-        "text":"'${2/ /⠀}'"
-      }' \
-    2>/dev/zero 1>&2
+  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+    proxychains curl $api_send_message \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{
+          "chat_id":"'$1'",
+          "text":"'${2/ /⠀}'"
+        }' \
+      2>/dev/zero 1>&2
+  else
+    curl $api_send_message \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{
+          "chat_id":"'$1'",
+          "text":"'${2/ /⠀}'"
+        }' \
+      2>/dev/zero 1>&2
+  fi
 }
 
 function send_barq_template_to_user() {
   local api_send_message="$base_url/sendMessage"
 
-  proxychains curl $api_send_message \
-    -X POST \
-    -H 'Accept: application/json, text/plain, */*' \
-    -H 'Accept-Language: en-US,en;q=0.5' \
-    -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-    -H 'Content-Type: application/json; charset=utf-8' \
-    -d '{
-        "chat_id":"'$1'",
-        "text":"برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
-      }' \
-    2>/dev/zero 1>&2
+  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+    proxychains curl $api_send_message \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{
+          "chat_id":"'$1'",
+          "text":"برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
+        }' \
+      2>/dev/zero 1>&2
+  else
+    curl $api_send_message \
+      -X POST \
+      -H 'Accept: application/json, text/plain, */*' \
+      -H 'Accept-Language: en-US,en;q=0.5' \
+      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d '{
+          "chat_id":"'$1'",
+          "text":"برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
+        }' \
+      2>/dev/zero 1>&2
+  fi
 }
 
 function update_data_add_user_to_bill() {
@@ -297,14 +344,16 @@ else
     echo '{}' > data.json
   fi
 
-  while [[ -z $proxy_connected ]]; do
-    echo "Testing proxy connection"
-    proxy_connected=$(proxychains curl https://google.com 2>/dev/zero 1>&2 && echo true)
-    sleep .05
-  done
-  echo 'Proxy connected'
-
   set_variables
+
+  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+    while [[ -z $proxy_connected ]]; do
+      echo "Testing proxy connection"
+      proxy_connected=$(proxychains curl https://google.com 2>/dev/zero 1>&2 && echo true)
+      sleep .05
+    done
+    echo 'Proxy connected'
+  fi
 
   if [ -z ${env[BOT_WEBHOOK_URL]} ]; then
     make_webhook_persist &
