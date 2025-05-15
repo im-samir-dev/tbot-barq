@@ -139,11 +139,13 @@ function webhook() {
       /add)
         echo "Add user ($sender_id) to $parameters"
         update_data_add_user_to_bill $parameters $sender_id
+        send_message_to_user $sender_id "قبض $parameters برای شما اضافه شد"
       ;;
 
       /remove)
         echo "Remove user ($sender_id) from $parameters"
         update_data_remove_user_from_bill $parameters $sender_id
+        send_message_to_user $sender_id "قبض $parameters برای شما حذف شد"
       ;;
 
       /list)
