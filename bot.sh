@@ -59,7 +59,7 @@ function barq_e_man_get_planned() {
 
   local current=$(barq_e_man_get_current $1)
 
-  if [ "$data_length" -gt 0 ] && [ ! -z $current ]; then
+  if [[ "$data_length" -gt 0 ]] && [ ! -z $current ]; then
     for i in $(seq 0 1 $((data_length-1))); do
       local date=$(echo $data | jq '.['$i'].outage_date' | sed 's/"//g')
       local start_time=$(echo $data | jq '.['$i'].outage_start_time' | sed 's/"//g')
