@@ -39,10 +39,11 @@ pip install jdatetime
 Create a `.env` file in the project root directory with the following contents:
 
 ```env
+PORT=8080
+USE_PROXYCHAINS=<true/false>
 BOT_TOKEN=<your_telegram_bot_token>
 BARQ_TOKEN=<your_barq_e_man_api_token>
 BOT_WEBHOOK_URL=<optional_webhook_url>
-PORT=8080
 ```
 
 ### 2. Install as a systemd Service
