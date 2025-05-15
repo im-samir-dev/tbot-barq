@@ -365,13 +365,6 @@ else
     echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
   fi
 
-
-  # create_webhook &
-  # create_webhook_pid=$!
-
-  # echo "Webhook address: $(get_webhook_address)"
-  # set_webhook
-
   webhook &
   webhook_pid=$!
 
@@ -381,12 +374,6 @@ else
     sleep 1800
   done
 
-  wait $webhook_pid
   kill $webhook_pid
-
-  #wait $make_webhook_persist_pid
   kill $make_webhook_persist_pid
-
-  #wait $create_webhook_pid
-  # kill $create_webhook_pid
 fi
