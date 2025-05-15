@@ -338,9 +338,9 @@ if [ "$1" = "install" ]; then
     [Install]
     WantedBy=multi-user.target" > bot.service
 
-    sudo mv bot.service /lib/systemd/system/
-    sudo systemctl start bot.service
-    sudo systemctl enable bot.service
+  sudo mv bot.service /lib/systemd/system/
+  sudo systemctl start bot.service
+  sudo systemctl enable bot.service
 else
   if [ ! -f data.json ]; then
     echo '{}' > data.json
