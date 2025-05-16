@@ -23,6 +23,16 @@ function get_bill_users() {
   echo $user_ids
 }
 
+function get_user_alarm() {
+  local alarm=$(jq '.alarm["'$1'"]' data.json)
+
+  if [ $alarm != null ]; then
+    echo $alarm
+  else
+    echo ""
+  fi
+}
+
 function check_all_bills() {
   local bills=$(cat data.json | jq 'keys[]' | sed 's/"//g')
 
@@ -72,6 +82,12 @@ function barq_e_man_get_planned() {
         send_barq_template_to_user $user_id $1 $date $start_time $stop_time
         update_data_set_last_sent_for_bill $1 $user_id $date $start_time
 
+        local alarm=$(get_user_alarm $user_id)
+        if [ -n $alarm ]; then
+          local gregorian_date=$(python -c "import jdatetime; date=jdatetime.datetime.strptime('$date', '%Y/%m/%d').togregorian(); print(date.strftime('%m/%d/%Y'))")
+          schedule_message $user_id "$start_time $gregorian_date" $alarm
+        fi
+
         echo "Send message to $user_id for $1 with params: $date - $start_time - $stop_time"
       done
     done
@@ -105,7 +121,6 @@ function make_webhook_persist() {
 
     sleep .1
   done
-
 }
 
 function get_webhook_address() {
@@ -148,6 +163,12 @@ function webhook() {
         send_message_to_user $sender_id "قبض $parameters برای شما حذف شد"
       ;;
 
+      /alarm)
+        echo "Alarm for user ($sender_id) for $parameters minutes before blackout"
+        update_data_set_alarm_for_user $sender_id $parameters
+        send_message_to_user $sender_id "برای شما هشدار $parameters دقیقه قبل از قطعی ثبت شد"
+      ;;
+
       /list)
         echo "List user ($sender_id) bills list"
         # TODO Send bills of user to it's chat
@@ -155,7 +176,7 @@ function webhook() {
 
       *)
         echo "Command '$message_text' not found"
-        send_message_to_user $sender_id Message⠀is⠀not⠀valid
+        send_message_to_user $sender_id "Message is not valid"
     esac
   done
 }
@@ -203,12 +224,12 @@ function set_webhook() {
       -d '{"url":"'$1'"}' \
       2>/dev/zero 1>&2
   fi
-
-  send_message_to_user 111156044 "Wehhook set to $webhook_url"
 }
 
 function send_message_to_user() {
   local api_send_message="$base_url/sendMessage"
+
+  body=$(jq -anc --arg id "$1" --arg s "$2" '{"chat_id": $id, "text": $s}')
 
   if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
     proxychains curl $api_send_message \
@@ -217,10 +238,7 @@ function send_message_to_user() {
       -H 'Accept-Language: en-US,en;q=0.5' \
       -H 'Accept-Encoding: gzip, deflate, br, zstd' \
       -H 'Content-Type: application/json; charset=utf-8' \
-      -d '{
-          "chat_id":"'$1'",
-          "text":"'${2/ /⠀}'"
-        }' \
+      -d "$body" \
       2>/dev/zero 1>&2
   else
     curl $api_send_message \
@@ -229,10 +247,7 @@ function send_message_to_user() {
       -H 'Accept-Language: en-US,en;q=0.5' \
       -H 'Accept-Encoding: gzip, deflate, br, zstd' \
       -H 'Content-Type: application/json; charset=utf-8' \
-      -d '{
-          "chat_id":"'$1'",
-          "text":"'${2/ /⠀}'"
-        }' \
+      -d "$body" \
       2>/dev/zero 1>&2
   fi
 }
@@ -240,31 +255,13 @@ function send_message_to_user() {
 function send_barq_template_to_user() {
   local api_send_message="$base_url/sendMessage"
 
-  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
-    proxychains curl $api_send_message \
-      -X POST \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Accept-Language: en-US,en;q=0.5' \
-      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-      -H 'Content-Type: application/json; charset=utf-8' \
-      -d '{
-          "chat_id":"'$1'",
-          "text":"برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
-        }' \
-      2>/dev/zero 1>&2
-  else
-    curl $api_send_message \
-      -X POST \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Accept-Language: en-US,en;q=0.5' \
-      -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-      -H 'Content-Type: application/json; charset=utf-8' \
-      -d '{
-          "chat_id":"'$1'",
-          "text":"برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
-        }' \
-      2>/dev/zero 1>&2
-  fi
+  send_message_to_user $1 "برای قبض '$2' یک خاموشی در تاریخ '$3' از ساعت '$4' تا '$5' ثبت شده است"
+}
+
+function send_alarm_template_to_user() {
+  local api_send_message="$base_url/sendMessage"
+
+  send_message_to_user $1 "برق شما '$2' دقیقه‌ی دیگر قطع می‌شود"
 }
 
 function update_data_add_user_to_bill() {
@@ -309,6 +306,14 @@ function update_data_set_last_sent_for_bill() {
   fi
 }
 
+function update_data_set_alarm_for_user() {
+  if [[ -n $1 && -n $2 ]]; then
+    local data=$(jq '(.alarm["'$1'"])|='$2 data.json)
+
+    echo $data > data.json
+  fi
+}
+
 function check_last_sent() {
   if [[ -n $1 && -n $2 && -n $3 ]]; then
     local data=$(cat data.json | jq '."'$1'"|values[]|select (.last_sent==false or .last_sent.date<"'$2'" or (.last_sent.date=="'$2'" and .last_sent.time<"'$3'")) | .id')
@@ -317,63 +322,77 @@ function check_last_sent() {
   fi
 }
 
-if [ "$1" = "install" ]; then
-  sudo systemctl stop bot.service
-  sudo systemctl disable bot.service
-  sudo rm /lib/systemd/system/bot.service
+function schedule_message() {
+  at "$2 -$3 minutes"<<EOF
+$0 alarm $1 $3
+EOF
+}
 
-  echo "
-    [Unit]
-    Description=Telegram Bot - Barq-e Man: Khaamushi
-    After=network-online.target
+set_variables
 
-    [Service]
-    ExecStart=/bin/bash $PWD/bot.sh
-    WorkingDirectory=$PWD
-    StandardOutput=inherit
-    StandardError=inherit
-    Restart=always
-    User=$USER
+case $1 in
+  install)
+    sudo systemctl stop bot.service
+    sudo systemctl disable bot.service
+    sudo rm /lib/systemd/system/bot.service
 
-    [Install]
-    WantedBy=multi-user.target" > bot.service
+    echo "
+      [Unit]
+      Description=Telegram Bot - Barq-e Man: Khaamushi
+      After=network-online.target
 
-  sudo mv bot.service /lib/systemd/system/
-  sudo systemctl start bot.service
-  sudo systemctl enable bot.service
-else
-  if [ ! -f data.json ]; then
-    echo '{}' > data.json
-  fi
+      [Service]
+      ExecStart=/bin/bash $PWD/bot.sh
+      WorkingDirectory=$PWD
+      StandardOutput=inherit
+      StandardError=inherit
+      Restart=always
+      User=$USER
 
-  set_variables
+      [Install]
+      WantedBy=multi-user.target" > bot.service
 
-  if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
-    while [[ -z $proxy_connected ]]; do
-      echo "Testing proxy connection"
-      proxy_connected=$(proxychains curl https://google.com 2>/dev/zero 1>&2 && echo true)
-      sleep .05
+    sudo mv bot.service /lib/systemd/system/
+    sudo systemctl start bot.service
+    sudo systemctl enable bot.service
+  ;;
+
+  alarm)
+    send_alarm_template_to_user $2 $3
+  ;;
+
+  *)
+    if [ ! -f data.json ]; then
+      echo '{}' > data.json
+    fi
+
+    if [ "${env[USE_PROXYCHAINS]}" == "true" ]; then
+      while [[ -z $proxy_connected ]]; do
+        echo "Testing proxy connection"
+        proxy_connected=$(proxychains curl https://google.com 2>/dev/zero 1>&2 && echo true)
+        sleep .05
+      done
+      echo 'Proxy connected'
+    fi
+
+    if [ -z ${env[BOT_WEBHOOK_URL]} ]; then
+      make_webhook_persist &
+      make_webhook_persist_pid=$!
+    else
+      set_webhook ${env[BOT_WEBHOOK_URL]}
+      echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
+    fi
+
+    webhook &
+    webhook_pid=$!
+
+    while true; do
+      echo "Check bills"
+      check_all_bills
+      sleep 1800
     done
-    echo 'Proxy connected'
-  fi
 
-  if [ -z ${env[BOT_WEBHOOK_URL]} ]; then
-    make_webhook_persist &
-    make_webhook_persist_pid=$!
-  else
-    set_webhook ${env[BOT_WEBHOOK_URL]}
-    echo "Webhook address: ${env[BOT_WEBHOOK_URL]}"
-  fi
-
-  webhook &
-  webhook_pid=$!
-
-  while true; do
-    echo "Check bills"
-    check_all_bills
-    sleep 1800
-  done
-
-  kill $webhook_pid
-  kill $make_webhook_persist_pid
-fi
+    kill $webhook_pid
+    kill $make_webhook_persist_pid
+  ;;
+esac
