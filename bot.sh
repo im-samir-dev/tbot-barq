@@ -33,6 +33,20 @@ function get_user_alarm() {
   fi
 }
 
+function get_old_scheduled_message_ids() {
+  task_ids=$(atq | awk '{ print $1 }')
+  for task_id in $task_ids; do
+    task_info=$(at -c $task_id)
+    found_task=$(echo $task_info | grep -Eo "$0 alarm $1 $2$")
+
+    if [ -n "$found_task" ]; then
+      found_ids+=$task_id' '
+    fi
+  done
+
+  echo $found_ids
+}
+
 function check_all_bills() {
   local bills=$(cat data.json | jq 'keys[]' | sed 's/"//g')
 
@@ -165,8 +179,13 @@ function webhook() {
 
       /alarm)
         echo "Alarm for user ($sender_id) for $parameters minutes before blackout"
+        local alarm=$(get_user_alarm $user_id)
         update_data_set_alarm_for_user $sender_id $parameters
         send_message_to_user $sender_id "برای شما هشدار $parameters دقیقه قبل از قطعی ثبت شد"
+
+        if [ -n $alarm ]; then
+          rescheduled_message $sender_id $alarm $parameters
+        fi
       ;;
 
       /list)
@@ -326,6 +345,21 @@ function schedule_message() {
   at "$2 -$3 minutes"<<EOF
 $0 alarm $1 $3
 EOF
+}
+
+function rescheduled_message() {
+  local old_ids=$(get_old_scheduled_message_ids $1 $2)
+
+  for id in $old_ids; do
+    local found_time=$(atq | awk '$1=='$id' { print $3,$4,$5,$6 }')
+    local time=$(date -d "$found_time +$2 minutes" '+%H:%M %m/%d/%Y')
+
+    # echo -e "ft:$found_time\ntt:$time\nid:$id"
+
+    schedule_message $1 "$time" $3
+  done
+
+  atrm $old_ids
 }
 
 set_variables
