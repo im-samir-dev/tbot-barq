@@ -9,6 +9,7 @@ A Bash-based Telegram bot that tracks and notifies users about planned and curre
   - `/start` – Greets the user
   - `/add <bill_id>` – Subscribes a user to outage alerts for a bill
   - `/remove <bill_id>` – Unsubscribes a user
+  - `/alarm <minutes>` – Send alarm to user before blackouts
   - `/list` – (Planned) Lists all bill IDs the user is subscribed to
 - Uses `proxychains` and `serveo.net` for webhook tunneling
 - JSON-based persistent data storage
@@ -78,6 +79,7 @@ Users can interact with the bot using these commands:
 - `/start` – Greeting message
 - `/add <bill_id>` – Add subscription
 - `/remove <bill_id>` – Remove subscription
+- `/alarm <minutes>` – Send alarm to user before blackouts
 - `/list` – *(coming soon)* View subscriptions
 
 ## Notes
